@@ -1,0 +1,22 @@
+import streamlit as st
+from document_handler import load_and_split_pdf
+from vector_store import create_vector_store
+from qa_chain import ask_question
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+st.set_page_config(page_title="GenAI Document Q&A")
+st.title("📄 GenAI-Powered Document Q&A Chatbot")
+
+uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+question = st.text_input("Ask a question from the document:")
+
+if uploaded_file and question:
+    st.info("Processing document...")
+    docs = load_and_split_pdf(uploaded_file)
+    db = create_vector_store(docs)
+    response = ask_question(db, question)
+    st.success("Answer:")
+    st.write(response)
