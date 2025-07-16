@@ -1,4 +1,4 @@
-# 📄 GenAI-Powered Document Q&A Chatbot
+# GenAI-Powered Document Q&A Chatbot
 
 An interactive Streamlit app that lets you upload documents (PDF) and ask natural language questions. It uses LangChain, OpenAI, and FAISS for intelligent retrieval and answer generation.
 

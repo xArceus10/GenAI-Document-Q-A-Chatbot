@@ -1,38 +1,45 @@
 import streamlit as st
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.chains.question_answering import load_qa_chain
-from langchain.chat_models import ChatOpenAI
-from langchain.docstore.document import Document
-from PyPDF2 import PdfReader
+from document_handler import load_and_split_pdf
+from vector_store import create_vector_store
+from qa_chain import ask_question
+from dotenv import load_dotenv
 import os
 
-st.title("GenAI Document Q&A Chatbot")
+load_dotenv()
 
-uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-question = st.text_input("Ask a question about the document:")
+# --- Page config ---
+st.set_page_config(
+    page_title="GenAI Doc Q&A Chatbot",
+    page_icon="📄",
+    layout="centered"
+)
 
+# --- Header ---
+st.markdown("## 📄 GenAI Document Q&A Chatbot")
+st.markdown("Ask questions from any uploaded PDF using AI!")
+
+# --- Upload and Question ---
+col1, col2 = st.columns([2, 3])
+
+with col1:
+    uploaded_file = st.file_uploader("Upload your PDF:", type=["pdf"])
+
+with col2:
+    question = st.text_input("Ask a question:")
+
+# --- Process ---
 if uploaded_file and question:
-    pdf_reader = PdfReader(uploaded_file)
-    raw_text = ""
-    for page in pdf_reader.pages:
-        raw_text += page.extract_text()
+    with st.spinner("Reading and thinking.."):
+        docs = load_and_split_pdf(uploaded_file)
+        db = create_vector_store(docs)
+        answer = ask_question(db, question)
 
-    # Split text
-    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    texts = splitter.split_text(raw_text)
-    docs = [Document(page_content=t) for t in texts]
+    st.success("Answer Generated:")
+    st.markdown(f"### 💬 {answer}")
+elif uploaded_file and not question:
+    st.info("✏️ Enter a question about the uploaded PDF.")
+elif question and not uploaded_file:
+    st.warning("📄 Please upload a PDF file first.")
 
-    # Embedding & vector DB
-    embeddings = OpenAIEmbeddings()
-    db = FAISS.from_documents(docs, embeddings)
-
-    # Run QA chain
-    llm = ChatOpenAI()
-    chain = load_qa_chain(llm, chain_type="stuff")
-    docs = db.similarity_search(question)
-    response = chain.run(input_documents=docs, question=question)
-
-    st.markdown("**Answer:**")
-    st.write(response)
+# --- Footer ---
+st.markdown("---")

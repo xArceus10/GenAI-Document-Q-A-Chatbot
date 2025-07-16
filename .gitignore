@@ -1,2 +1,4 @@
 .idea/
-
+.env
+genai-key.pem
+__pycache__/
